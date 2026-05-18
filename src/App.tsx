@@ -14,7 +14,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("http://localhost:3000/api/products")
+    fetch("https://learning-inventory-backend.vercel.app/api/products")
       .then((res) => res.json())
       .then((data) => {
         setProducts(data);
