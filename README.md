@@ -1,73 +1,179 @@
-# React + TypeScript + Vite
+# 🗄️ Learning Inventory — Fase 6
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicación fullstack de gestión de inventario construida con PostgreSQL (Neon), Next.js y React/Vite. Desplegada en Vercel.
 
-Currently, two official plugins are available:
+## 🌐 Demo en producción
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Frontend**: https://learning-inventory-frontend.vercel.app/
+- **Backend API**: https://learning-inventory-backend.vercel.app/api/products
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🏗️ Arquitectura
 
-## Expanding the ESLint configuration
+React/Vite (Frontend) → Next.js API Routes (Backend) → PostgreSQL en Neon
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 📦 Tecnologías
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+| Capa | Tecnología |
+|------|-----------|
+| Base de datos | PostgreSQL 17 (Neon serverless) |
+| Backend | Next.js 15 + TypeScript |
+| Driver DB | @neondatabase/serverless |
+| Frontend | React + Vite + TypeScript |
+| Despliegue | Vercel |
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+---
+
+## 🗃️ Esquema de base de datos
+
+### Tabla `categories`
+| Columna | Tipo | Descripción |
+|---------|------|-------------|
+| id | UUID | Clave primaria generada automáticamente |
+| name | VARCHAR(100) | Nombre único de la categoría |
+| description | TEXT | Descripción opcional |
+
+### Tabla `products`
+| Columna | Tipo | Descripción |
+|---------|------|-------------|
+| id | UUID | Clave primaria generada automáticamente |
+| name | VARCHAR(150) | Nombre del producto |
+| price | NUMERIC(10,2) | Precio mayor que 0 |
+| stock | INTEGER | Stock disponible, por defecto 0 |
+| category_id | UUID | Foreign key a categories |
+
+---
+
+## 🚀 Instalación y uso local
+
+### Backend
+
+```bash
+cd backend
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Crea un archivo `.env.local` con tu connection string de Neon:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+DATABASE_URL=postgresql://usuario:contraseña@host/neondb?sslmode=require
 
-export default defineConfig([
-  globalIgnores(['dist']),
+Arranca el servidor:
+
+```bash
+npm run dev
+```
+
+La API estará disponible en `http://localhost:3000/api/products`
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+El frontend estará en `http://localhost:5173`
+
+---
+
+## 📡 API Endpoints
+
+### GET `/api/products`
+Devuelve todos los productos con su categoría mediante un INNER JOIN.
+
+**Respuesta:**
+```json
+[
   {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+    "id": "uuid",
+    "name": "Portátil Gaming",
+    "price": "1299.99",
+    "stock": 9,
+    "category": "Electrónica"
+  }
+]
+```
+
+### POST `/api/products`
+Inserta un nuevo producto usando consultas parametrizadas.
+
+**Body:**
+```json
+{
+  "name": "Nuevo producto",
+  "price": 99.99,
+  "stock": 10,
+  "category_id": "uuid-de-categoria"
+}
+```
+
+---
+
+## 🔒 Seguridad
+
+Todas las consultas usan **parámetros preparados** para prevenir inyección SQL:
+
+```typescript
+// ✅ Seguro - parámetros separados del SQL
+const result = await sql`
+  INSERT INTO products (name, price, stock, category_id)
+  VALUES (${name}, ${price}, ${stock}, ${category_id})
+`;
+
+// ❌ Vulnerable - concatenación directa
+const query = "SELECT * FROM products WHERE id = " + userId;
+```
+
+---
+
+## 📁 Estructura del proyecto
+learning-inventory/
+├── sql/
+│   ├── schema.sql        # Definición de tablas
+│   └── seed.sql          # Datos de prueba
+└── docs/
+├── arquitectura-datos.md
+├── analisis-sql.md
+└── seguridad-db.md
+backend/
+├── src/
+│   ├── app/
+│   │   └── api/
+│   │       └── products/
+│   │           └── route.ts
+│   └── lib/
+│       └── db.ts
+└── .env.local
+frontend/
+└── src/
+└── App.tsx
+
+---
+
+## 🧩 ORM: Drizzle ORM
+
+En proyectos grandes se usan ORMs para abstraer las consultas SQL. Drizzle ORM permite definir el esquema en TypeScript y hacer consultas con tipado completo.
+
+### Ventajas frente a SQL puro
+- El esquema se define en TypeScript con autocompletado y validación
+- Las consultas son type-safe, el compilador detecta errores antes de ejecutar
+- Migraciones automáticas al cambiar el esquema
+- Más mantenible en proyectos grandes con muchas tablas
+
+### Ejemplo con Drizzle
+
+```typescript
+// Definición del esquema
+const products = pgTable('products', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: varchar('name', { length: 150 }).notNull(),
+  price: numeric('price').notNull(),
+});
+
+// Consulta tipada
+const result = await db.select().from(products);
 ```
